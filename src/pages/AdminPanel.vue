@@ -1,6 +1,8 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import api from '../api'
+import { pushToast } from '../toast'
+import LoadingButton from '../components/LoadingButton.vue'
 
 const users = ref([])
 
@@ -8,7 +10,7 @@ const multaForm = ref({ user_id: '', motivo: '', monto: '' })
 const pagoForm = ref({ user_id: '', monto: '', periodo: '' })
 const asambleaForm = ref({ titulo: '', descripcion: '', fecha: '' })
 
-const status = ref({ multa: '', pago: '', asamblea: '' })
+const saving = ref({ multa: false, pago: false, asamblea: false })
 
 onMounted(async () => {
   const { data } = await api.get('/admin/users')
@@ -16,35 +18,41 @@ onMounted(async () => {
 })
 
 async function submitMulta() {
-  status.value.multa = 'Guardando...'
+  saving.value.multa = true
   try {
     await api.post('/admin/multas', multaForm.value)
-    status.value.multa = 'Multa registrada.'
+    pushToast('Multa registrada.', 'success')
     multaForm.value = { user_id: '', motivo: '', monto: '' }
   } catch {
-    status.value.multa = 'Ocurrió un error al registrar la multa.'
+    pushToast('Ocurrió un error al registrar la multa.', 'error')
+  } finally {
+    saving.value.multa = false
   }
 }
 
 async function submitPago() {
-  status.value.pago = 'Guardando...'
+  saving.value.pago = true
   try {
     await api.post('/admin/pagos-atrasados', pagoForm.value)
-    status.value.pago = 'Pago atrasado registrado.'
+    pushToast('Pago atrasado registrado.', 'success')
     pagoForm.value = { user_id: '', monto: '', periodo: '' }
   } catch {
-    status.value.pago = 'Ocurrió un error al registrar el pago.'
+    pushToast('Ocurrió un error al registrar el pago.', 'error')
+  } finally {
+    saving.value.pago = false
   }
 }
 
 async function submitAsamblea() {
-  status.value.asamblea = 'Guardando...'
+  saving.value.asamblea = true
   try {
     await api.post('/admin/asambleas', asambleaForm.value)
-    status.value.asamblea = 'Asamblea creada y notificada a todos.'
+    pushToast('Asamblea creada y notificada a todos.', 'success')
     asambleaForm.value = { titulo: '', descripcion: '', fecha: '' }
   } catch {
-    status.value.asamblea = 'Ocurrió un error al crear la asamblea.'
+    pushToast('Ocurrió un error al crear la asamblea.', 'error')
+  } finally {
+    saving.value.asamblea = false
   }
 }
 </script>
@@ -71,8 +79,9 @@ async function submitAsamblea() {
           Monto
           <input v-model="multaForm.monto" type="number" min="0" step="0.01" required />
         </label>
-        <button type="submit">Registrar multa</button>
-        <p class="status">{{ status.multa }}</p>
+        <LoadingButton type="submit" :loading="saving.multa" loading-text="Guardando...">
+          Registrar multa
+        </LoadingButton>
       </form>
     </section>
 
@@ -94,8 +103,9 @@ async function submitAsamblea() {
           Monto
           <input v-model="pagoForm.monto" type="number" min="0" step="0.01" required />
         </label>
-        <button type="submit">Registrar pago atrasado</button>
-        <p class="status">{{ status.pago }}</p>
+        <LoadingButton type="submit" :loading="saving.pago" loading-text="Guardando...">
+          Registrar pago atrasado
+        </LoadingButton>
       </form>
     </section>
 
@@ -114,8 +124,9 @@ async function submitAsamblea() {
           Fecha y hora
           <input v-model="asambleaForm.fecha" type="datetime-local" required />
         </label>
-        <button type="submit">Crear asamblea (notifica a todos)</button>
-        <p class="status">{{ status.asamblea }}</p>
+        <LoadingButton type="submit" :loading="saving.asamblea" loading-text="Creando...">
+          Crear asamblea (notifica a todos)
+        </LoadingButton>
       </form>
     </section>
   </div>
@@ -175,11 +186,5 @@ button {
   font-weight: 600;
   cursor: pointer;
   font-size: 0.85rem;
-}
-.status {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #16a34a;
-  min-height: 1em;
 }
 </style>

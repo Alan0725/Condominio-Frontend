@@ -2,12 +2,15 @@
 import { computed, inject, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import api from '../api'
 import { user } from '../session'
+import { pushToast } from '../toast'
+import LoadingButton from './LoadingButton.vue'
 
 const echo = inject('echo')
 
 const messages = ref([])
 const newMessage = ref('')
 const connected = ref(false)
+const sending = ref(false)
 const scrollArea = ref(null)
 
 const isMine = (message) => message.user.id === user.value.id
@@ -29,8 +32,16 @@ async function send() {
   const body = newMessage.value.trim()
   if (!body) return
 
-  newMessage.value = ''
-  await api.post('/messages', { body })
+  sending.value = true
+  try {
+    await api.post('/messages', { body })
+    newMessage.value = ''
+    pushToast('Mensaje enviado', 'success')
+  } catch {
+    pushToast('No se pudo enviar el mensaje', 'error')
+  } finally {
+    sending.value = false
+  }
 }
 
 let channel = null
@@ -88,7 +99,7 @@ const statusLabel = computed(() => (connected.value ? 'En vivo' : 'Conectando...
         placeholder="Escribe un mensaje para todo el condominio..."
         maxlength="1000"
       />
-      <button type="submit">Enviar</button>
+      <LoadingButton type="submit" :loading="sending" loading-text="Enviando...">Enviar</LoadingButton>
     </form>
   </div>
 </template>

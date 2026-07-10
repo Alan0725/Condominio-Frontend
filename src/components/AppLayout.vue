@@ -1,11 +1,13 @@
 <script setup>
-import { onUnmounted, provide } from 'vue'
+import { onUnmounted, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { user, setUser } from '../session'
 import { resetNotifications } from '../notifications'
 import { createEcho } from '../echo'
+import { pushToast } from '../toast'
 import api from '../api'
 import NotificationBell from './NotificationBell.vue'
+import LoadingButton from './LoadingButton.vue'
 
 const router = useRouter()
 
@@ -16,15 +18,21 @@ onUnmounted(() => {
   echo.disconnect()
 })
 
+const loggingOut = ref(false)
+
 async function logout() {
+  loggingOut.value = true
   try {
     await api.post('/logout')
+    pushToast('Sesión cerrada.', 'success')
   } catch {
-    // ignore, we're logging out locally regardless
+    pushToast('Sesión cerrada localmente (sin conexión con el servidor).', 'error')
+  } finally {
+    loggingOut.value = false
+    resetNotifications()
+    setUser(null)
+    router.push('/')
   }
-  resetNotifications()
-  setUser(null)
-  router.push('/')
 }
 </script>
 
@@ -42,7 +50,9 @@ async function logout() {
       <div class="right">
         <NotificationBell />
         <span class="who">{{ user.name }} · {{ user.departamento }}</span>
-        <button type="button" @click="logout">Salir</button>
+        <LoadingButton type="button" :loading="loggingOut" loading-text="Saliendo..." @click="logout">
+          Salir
+        </LoadingButton>
       </div>
     </header>
 

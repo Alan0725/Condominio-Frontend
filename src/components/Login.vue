@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import api from '../api'
 import { setUser } from '../session'
+import { pushToast } from '../toast'
+import LoadingButton from './LoadingButton.vue'
 
 const mode = ref('login')
 const loading = ref(false)
@@ -29,11 +31,13 @@ async function submit() {
 
     localStorage.setItem('token', data.token)
     setUser(data.user)
+    pushToast(`Bienvenido, ${data.user.name}`, 'success')
   } catch (e) {
     error.value =
       e.response?.data?.message ||
       Object.values(e.response?.data?.errors ?? {}).flat().join(' ') ||
       'Ocurrió un error, intenta de nuevo.'
+    pushToast(error.value, 'error')
   } finally {
     loading.value = false
   }
@@ -75,9 +79,9 @@ function toggleMode() {
 
       <p v-if="error" class="error">{{ error }}</p>
 
-      <button type="submit" :disabled="loading">
-        {{ loading ? 'Cargando...' : mode === 'login' ? 'Entrar' : 'Registrarme' }}
-      </button>
+      <LoadingButton type="submit" :loading="loading" loading-text="Entrando...">
+        {{ mode === 'login' ? 'Entrar' : 'Registrarme' }}
+      </LoadingButton>
     </form>
 
     <button class="link" type="button" @click="toggleMode">
