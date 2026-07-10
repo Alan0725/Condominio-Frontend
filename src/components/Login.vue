@@ -16,6 +16,13 @@ const form = ref({
   password: '',
 })
 
+const forgotForm = ref({
+  email: '',
+  code: '',
+  password: '',
+  password_confirmation: '',
+})
+
 async function submit() {
   error.value = ''
   loading.value = true
@@ -48,8 +55,54 @@ async function submit() {
   }
 }
 
+async function requestCode() {
+  error.value = ''
+  loading.value = true
+
+  try {
+    const { data } = await api.post('/forgot-password', { email: forgotForm.value.email })
+    pushToast(data.message, 'success')
+    mode.value = 'forgot-code'
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Ocurrió un error, intenta de nuevo.'
+    pushToast(error.value, 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function resetPassword() {
+  error.value = ''
+  loading.value = true
+
+  try {
+    const { data } = await api.post('/reset-password', forgotForm.value)
+    pushToast(data.message, 'success')
+    forgotForm.value = { email: '', code: '', password: '', password_confirmation: '' }
+    mode.value = 'login'
+  } catch (e) {
+    error.value =
+      e.response?.data?.message ||
+      Object.values(e.response?.data?.errors ?? {}).flat().join(' ') ||
+      'Ocurrió un error, intenta de nuevo.'
+    pushToast(error.value, 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
 function toggleMode() {
   mode.value = mode.value === 'login' ? 'register' : 'login'
+  error.value = ''
+}
+
+function goToForgot() {
+  mode.value = 'forgot-email'
+  error.value = ''
+}
+
+function backToLogin() {
+  mode.value = 'login'
   error.value = ''
 }
 </script>
@@ -58,10 +111,13 @@ function toggleMode() {
   <div class="auth-card">
     <h1>Chat del Condominio</h1>
     <p class="subtitle">
-      {{ mode === 'login' ? 'Inicia sesión con tu cuenta' : 'Crea una cuenta para tu departamento' }}
+      <template v-if="mode === 'login'">Inicia sesión con tu cuenta</template>
+      <template v-else-if="mode === 'register'">Crea una cuenta para tu departamento</template>
+      <template v-else-if="mode === 'forgot-email'">Recupera el acceso a tu cuenta</template>
+      <template v-else>Ingresa el código que te enviamos por correo</template>
     </p>
 
-    <form @submit.prevent="submit">
+    <form v-if="mode === 'login' || mode === 'register'" @submit.prevent="submit">
       <template v-if="mode === 'register'">
         <label>
           Nombre
@@ -89,7 +145,54 @@ function toggleMode() {
       </LoadingButton>
     </form>
 
-    <button class="link" type="button" @click="toggleMode">
+    <form v-else-if="mode === 'forgot-email'" @submit.prevent="requestCode">
+      <label>
+        Correo
+        <input v-model="forgotForm.email" type="email" required />
+      </label>
+
+      <p v-if="error" class="error">{{ error }}</p>
+
+      <LoadingButton type="submit" :loading="loading" loading-text="Enviando...">
+        Enviar código
+      </LoadingButton>
+    </form>
+
+    <form v-else @submit.prevent="resetPassword">
+      <label>
+        Código de 6 dígitos
+        <input v-model="forgotForm.code" type="text" inputmode="numeric" maxlength="6" required />
+      </label>
+      <label>
+        Nueva contraseña
+        <input v-model="forgotForm.password" type="password" required minlength="6" />
+      </label>
+      <label>
+        Confirmar nueva contraseña
+        <input v-model="forgotForm.password_confirmation" type="password" required minlength="6" />
+      </label>
+
+      <p v-if="error" class="error">{{ error }}</p>
+
+      <LoadingButton type="submit" :loading="loading" loading-text="Guardando...">
+        Restablecer contraseña
+      </LoadingButton>
+    </form>
+
+    <button v-if="mode === 'login'" class="link" type="button" @click="goToForgot">
+      ¿Olvidaste tu contraseña?
+    </button>
+
+    <button
+      v-if="mode === 'forgot-email' || mode === 'forgot-code'"
+      class="link"
+      type="button"
+      @click="backToLogin"
+    >
+      ← Volver a iniciar sesión
+    </button>
+
+    <button v-if="mode === 'login' || mode === 'register'" class="link" type="button" @click="toggleMode">
       {{ mode === 'login' ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión' }}
     </button>
   </div>
@@ -147,12 +250,14 @@ button[type='submit']:disabled {
   cursor: default;
 }
 .link {
+  display: block;
   margin-top: 1rem;
   border: none;
   background: none;
   color: #2563eb;
   cursor: pointer;
   font-size: 0.85rem;
+  text-align: left;
 }
 .error {
   color: #dc2626;
