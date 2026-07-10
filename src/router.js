@@ -6,6 +6,7 @@ import AsambleaDetail from './pages/AsambleaDetail.vue'
 import MultaDetail from './pages/MultaDetail.vue'
 import PagoAtrasadoDetail from './pages/PagoAtrasadoDetail.vue'
 import AdminPanel from './pages/AdminPanel.vue'
+import Account from './pages/Account.vue'
 
 const routes = [
   { path: '/', name: 'chat', component: Chat },
@@ -14,6 +15,7 @@ const routes = [
   { path: '/multas/:id', name: 'multa-detail', component: MultaDetail, props: true },
   { path: '/pagos-atrasados/:id', name: 'pago-detail', component: PagoAtrasadoDetail, props: true },
   { path: '/admin', name: 'admin', component: AdminPanel, meta: { requiresAdmin: true } },
+  { path: '/cuenta', name: 'account', component: Account },
 ]
 
 const router = createRouter({

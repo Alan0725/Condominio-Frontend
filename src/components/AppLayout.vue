@@ -63,7 +63,7 @@ async function logout() {
       </div>
       <div class="right">
         <NotificationBell />
-        <span class="who">{{ user.name }} · {{ user.departamento }}</span>
+        <router-link to="/cuenta" class="who">{{ user.name }} · {{ user.departamento }}</router-link>
         <LoadingButton type="button" :loading="loggingOut" loading-text="Saliendo..." @click="logout">
           Salir
         </LoadingButton>
@@ -140,6 +140,10 @@ nav a.router-link-exact-active {
 .who {
   font-size: 0.85rem;
   color: #444;
+  text-decoration: none;
+}
+.who:hover {
+  text-decoration: underline;
 }
 .right button {
   border: 1px solid #d7d7d7;
