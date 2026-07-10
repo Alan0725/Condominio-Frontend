@@ -31,7 +31,12 @@ async function submit() {
 
     localStorage.setItem('token', data.token)
     setUser(data.user)
-    pushToast(`Bienvenido, ${data.user.name}`, 'success')
+
+    if (mode.value === 'register') {
+      pushToast('Cuenta creada. Revisa tu correo para confirmarla.', 'success')
+    } else {
+      pushToast(`Bienvenido, ${data.user.name}`, 'success')
+    }
   } catch (e) {
     error.value =
       e.response?.data?.message ||

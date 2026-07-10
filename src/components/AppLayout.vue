@@ -19,6 +19,20 @@ onUnmounted(() => {
 })
 
 const loggingOut = ref(false)
+const resending = ref(false)
+const bannerDismissed = ref(false)
+
+async function resendVerification() {
+  resending.value = true
+  try {
+    const { data } = await api.post('/email/resend')
+    pushToast(data.message, 'success')
+  } catch {
+    pushToast('No se pudo reenviar el correo de confirmación.', 'error')
+  } finally {
+    resending.value = false
+  }
+}
 
 async function logout() {
   loggingOut.value = true
@@ -55,6 +69,23 @@ async function logout() {
         </LoadingButton>
       </div>
     </header>
+
+    <Transition name="fade">
+      <div v-if="!user.email_verified_at && !bannerDismissed" class="verify-banner">
+        <span>Confirma tu correo para terminar tu registro. Revisa tu bandeja de entrada.</span>
+        <div class="verify-actions">
+          <LoadingButton
+            type="button"
+            :loading="resending"
+            loading-text="Enviando..."
+            @click="resendVerification"
+          >
+            Reenviar correo
+          </LoadingButton>
+          <button type="button" class="dismiss" @click="bannerDismissed = true">✕</button>
+        </div>
+      </div>
+    </Transition>
 
     <main>
       <router-view />
@@ -123,5 +154,45 @@ main {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+.verify-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1.25rem;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.85rem;
+}
+.verify-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.verify-actions button:not(.dismiss) {
+  border: 1px solid #d97706;
+  background: #fff;
+  color: #92400e;
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.dismiss {
+  border: none;
+  background: none;
+  color: #92400e;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.2rem;
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
