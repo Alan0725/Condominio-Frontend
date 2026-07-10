@@ -1,8 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import api from '../api'
-
-const emit = defineEmits(['authenticated'])
+import { setUser } from '../session'
 
 const mode = ref('login')
 const loading = ref(false)
@@ -29,8 +28,7 @@ async function submit() {
     const { data } = await api.post(url, payload)
 
     localStorage.setItem('token', data.token)
-    localStorage.setItem('user', JSON.stringify(data.user))
-    emit('authenticated', { user: data.user, token: data.token })
+    setUser(data.user)
   } catch (e) {
     error.value =
       e.response?.data?.message ||

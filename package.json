@@ -12,7 +12,8 @@
     "axios": "^1.18.1",
     "laravel-echo": "^2.3.7",
     "pusher-js": "^8.5.0",
-    "vue": "^3.5.39"
+    "vue": "^3.5.39",
+    "vue-router": "^5.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.7",

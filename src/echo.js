@@ -12,5 +12,12 @@ export function createEcho() {
     wssPort: import.meta.env.VITE_REVERB_PORT,
     forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'https',
     enabledTransports: ['ws', 'wss'],
+    authEndpoint: import.meta.env.VITE_WS_AUTH_URL,
+    auth: {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    },
   })
 }

@@ -1,21 +1,16 @@
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import api from '../api'
-import { createEcho } from '../echo'
+import { user } from '../session'
 
-const props = defineProps({
-  user: { type: Object, required: true },
-})
-const emit = defineEmits(['logout'])
+const echo = inject('echo')
 
 const messages = ref([])
 const newMessage = ref('')
 const connected = ref(false)
 const scrollArea = ref(null)
 
-let echo = null
-
-const isMine = (message) => message.user.id === props.user.id
+const isMine = (message) => message.user.id === user.value.id
 
 async function loadMessages() {
   const { data } = await api.get('/messages')
@@ -38,22 +33,12 @@ async function send() {
   await api.post('/messages', { body })
 }
 
-async function logout() {
-  try {
-    await api.post('/logout')
-  } catch {
-    // ignore, we're logging out locally regardless
-  }
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
-  emit('logout')
-}
+let channel = null
 
 onMounted(async () => {
   await loadMessages()
 
-  echo = createEcho()
-
+  connected.value = echo.connector.pusher.connection.state === 'connected'
   echo.connector.pusher.connection.bind('connected', () => {
     connected.value = true
   })
@@ -61,15 +46,15 @@ onMounted(async () => {
     connected.value = false
   })
 
-  echo.channel('chat').listen('.MessageSent', async (payload) => {
+  channel = echo.channel('chat')
+  channel.listen('.MessageSent', async (payload) => {
     messages.value.push(payload)
     await scrollToBottom()
   })
 })
 
 onUnmounted(() => {
-  echo?.leave('chat')
-  echo?.disconnect()
+  echo.leave('chat')
 })
 
 const statusLabel = computed(() => (connected.value ? 'En vivo' : 'Conectando...'))
@@ -77,16 +62,9 @@ const statusLabel = computed(() => (connected.value ? 'En vivo' : 'Conectando...
 
 <template>
   <div class="chat-page">
-    <header>
-      <div>
-        <h1>Chat del Condominio</h1>
-        <span class="status" :class="{ live: connected }">● {{ statusLabel }}</span>
-      </div>
-      <div class="who">
-        <span>{{ user.name }} · {{ user.departamento }}</span>
-        <button type="button" @click="logout">Salir</button>
-      </div>
-    </header>
+    <div class="status-bar">
+      <span class="status" :class="{ live: connected }">● {{ statusLabel }}</span>
+    </div>
 
     <div class="messages" ref="scrollArea">
       <div
@@ -118,21 +96,14 @@ const statusLabel = computed(() => (connected.value ? 'En vivo' : 'Conectando...
 <style scoped>
 .chat-page {
   max-width: 640px;
+  width: 100%;
   margin: 0 auto;
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e5e5;
-}
-h1 {
-  font-size: 1.1rem;
-  margin: 0;
+.status-bar {
+  padding: 0.5rem 1.25rem 0;
 }
 .status {
   font-size: 0.75rem;
@@ -140,21 +111,6 @@ h1 {
 }
 .status.live {
   color: #16a34a;
-}
-.who {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.85rem;
-  color: #444;
-}
-.who button {
-  border: 1px solid #d7d7d7;
-  background: #fff;
-  border-radius: 6px;
-  padding: 0.35rem 0.7rem;
-  cursor: pointer;
-  font-size: 0.8rem;
 }
 .messages {
   flex: 1;
